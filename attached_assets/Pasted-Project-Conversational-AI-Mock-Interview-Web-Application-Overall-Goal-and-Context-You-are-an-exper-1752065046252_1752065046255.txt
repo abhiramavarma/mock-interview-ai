@@ -1,0 +1,116 @@
+Project: Conversational AI Mock Interview Web Application
+Overall Goal and Context:
+You are an expert full-stack developer. Your task is to generate a complete, functional mock interview web application. We will build this project incrementally, phase by phase, to ensure quality and allow for iterative refinement.
+
+Project Core Functionality:
+The application will allow a user to conduct a conversational mock interview with an AI.
+
+The AI asks a question.
+
+The user answers by speaking into a microphone.
+
+The application transcribes the user's speech to text using the browser's native capabilities.
+
+The AI analyzes the transcribed answer.
+
+The AI provides constructive feedback on the answer.
+
+The AI asks a relevant follow-up question, maintaining conversational context.
+
+The entire conversation history (AI questions, user answers, AI feedback, follow-up questions) is saved persistently.
+
+A summary page allows users to view their complete past interview sessions and their transcripts.
+
+Chosen Technology Stack:
+To ensure optimal performance, scalability, and development efficiency, the following technologies have been selected. A critical requirement is that all services and APIs used must be free.
+
+Frontend: React.js (for a highly interactive and responsive user interface).
+
+Backend: Node.js with Express.js (for a lightweight, scalable RESTful API layer, leveraging its non-blocking I/O model for real-time interactions).
+
+Database: PostgreSQL (for robust and structured storage of user data and conversation history, ensuring data integrity and efficient querying).
+
+Speech-to-Text (STT) & Text-to-Speech (TTS) API: Browser's Web Speech API (SpeechRecognition for STT and SpeechSynthesis for TTS - these are free, browser-native features).
+
+Large Language Model (LLM) API: Google Gemini 2.5 Flash. Please note the user's strong requirement for this to be free. If direct, free access to Gemini 2.5 Flash is not feasible within the Replit environment without an API key or cost, please provide guidance on how to proceed (e.g., suggest a truly free, open-source alternative that can be run locally/browser-based, or implement a mock LLM response for demonstration purposes, explaining the cost implication of Gemini 2.5 Flash).
+
+Instructions for Replit AI Interaction:
+I will provide instructions for each development phase. After completing a phase, you must:
+
+Confirm its functionality and readiness for the next phase.
+
+Provide any necessary environment setup details (e.g., .env variables, package installations).
+
+Suggest the next logical step or phase based on the project goal.
+
+If you encounter any errors during code generation or setup, provide the exact error message, the relevant code snippet(s), the file name(s) where the error occurs, what you were trying to achieve, and any steps you've already attempted. I will then provide further guidance.
+
+Phase 1: Backend Setup and Initial API Endpoints
+
+Task: Set up the Node.js/Express.js backend, configure PostgreSQL database connection, and create initial API endpoints for managing interview sessions and storing conversation turns.
+
+Detailed Requirements:
+
+Project Structure: Create a well-organized Express.js project structure (e.g., src/routes, src/controllers, src/models, src/db).
+
+Dependencies: Install necessary packages (e.g., express, pg for PostgreSQL, dotenv for environment variables, cors).
+
+Database Connection:
+
+Implement a db.js module to establish and manage the PostgreSQL connection using pg.
+
+Define environment variables for database credentials (e.g., PGUSER, PGHOST, PGDATABASE, PGPASSWORD, PGPORT).
+
+Create a SQL script or migration for the initial database schema. The schema should include at least two tables:
+
+interview_sessions: id (PK), start_time (timestamp), end_time (timestamp, nullable), topic (text), summary (text, nullable).
+
+conversation_turns: id (PK), session_id (FK to interview_sessions), turn_number (integer), speaker (text, e.g., 'AI' or 'User'), text_content (text), feedback_content (text, nullable), timestamp (timestamp).
+
+API Endpoints: Create the following RESTful API endpoints:
+
+POST /api/sessions: To start a new interview session. Returns the new session ID.
+
+Expected Request Body: { topic: "Full-Stack Developer" }
+
+Expected Response: { sessionId: "uuid-of-new-session" }
+
+POST /api/sessions/:sessionId/turn: To save a new conversation turn. This endpoint will receive data from the frontend after each AI-user interaction.
+
+Expected Request Body: { turnNumber: 1, speaker: "AI", textContent: "...", feedbackContent: "...", timestamp: "..." } (for AI turn) OR { turnNumber: 2, speaker: "User", textContent: "...", timestamp: "..." } (for User turn).
+
+Expected Response: { success: true, turnId: "uuid-of-new-turn" }
+
+GET /api/sessions: To retrieve a list of all past interview sessions (for the summary page).
+
+Expected Response: [{ id: "...", topic: "...", startTime: "...", summary: "..." },...]
+
+GET /api/sessions/:sessionId/history: To retrieve the complete conversation history for a specific session.
+
+Expected Response: [{ turnNumber: 1, speaker: "AI", textContent: "...", feedbackContent: "...", timestamp: "..." },...]
+
+Error Handling: Implement basic error handling for API routes and database operations.
+
+CORS: Configure CORS to allow frontend requests from the Replit environment.
+
+Example Database Schema (SQL):
+
+CREATE TABLE interview_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    start_time TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    end_time TIMESTAMP WITH TIME ZONE,
+    topic TEXT NOT NULL,
+    summary TEXT
+);
+
+CREATE TABLE conversation_turns (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID NOT NULL REFERENCES interview_sessions(id) ON DELETE CASCADE,
+    turn_number INTEGER NOT NULL,
+    speaker TEXT NOT NULL, -- 'AI' or 'User'
+    text_content TEXT NOT NULL,
+    feedback_content TEXT, -- Nullable for user turns
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+Proceed with Phase 1. Once complete, provide the code and confirm readiness for frontend development.
