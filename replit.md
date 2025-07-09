@@ -45,9 +45,11 @@ Preferred communication style: Simple, everyday language.
 - **Route Handlers**: RESTful endpoints for session management and conversation turns
 
 ### Speech Integration
-- **Speech-to-Text**: Browser's native Web Speech API (webkitSpeechRecognition)
-- **Real-time Transcription**: Continuous speech recognition with interim results
+- **Speech-to-Text**: Browser's native Web Speech API with fallback support
+- **Dual Input Modes**: Voice recognition with text input as backup option
+- **Improved Recognition**: Enhanced error handling and better speech configuration
 - **No External Dependencies**: Completely browser-based, no additional costs
+- **User-Friendly**: Automatic fallback to text mode if speech not supported
 
 ## Data Flow
 

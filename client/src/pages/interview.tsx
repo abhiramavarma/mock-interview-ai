@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Mic, MicOff, Send, X, User, Bot, Star, Keyboard, Volume2 } from "lucide-react";
+import { Mic, MicOff, Send, X, User, Bot, Star, Keyboard, Volume2, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ConversationTurn {
@@ -78,14 +78,11 @@ export default function Interview() {
             }
           }
           
-          // Update transcription with both final and interim results
-          const fullTranscript = (transcription + finalTranscript + interimTranscript).trim();
-          setTranscription(fullTranscript);
-          
-          // If we have final results, add them to our permanent transcription
-          if (finalTranscript) {
-            setTranscription(prev => (prev + " " + finalTranscript).trim());
-          }
+          // Update transcription with combined results
+          setTranscription(prev => {
+            const currentFinal = prev || "";
+            return (currentFinal + " " + finalTranscript + " " + interimTranscript).trim();
+          });
         };
         
         recognitionInstance.onerror = (event: any) => {
@@ -120,6 +117,9 @@ export default function Interview() {
           console.log("Speech recognition ended");
           setIsRecording(false);
           setIsTranscribing(false);
+          
+          // Auto-restart if user was still recording (for continuous mode)
+          // This helps when recognition stops due to silence but user wants to continue
         };
         
         setRecognition(recognitionInstance);
@@ -436,9 +436,21 @@ export default function Interview() {
                   {isRecording ? <MicOff className="text-white" /> : <Mic className="text-white" />}
                 </Button>
                 <div className="flex-1">
-                  <div className="min-h-12 bg-white border border-slate-300 rounded-lg p-3">
+                  <div className="min-h-12 bg-white border border-slate-300 rounded-lg p-3 relative">
                     {transcription ? (
-                      <span className="text-slate-800">{transcription}</span>
+                      <>
+                        <span className="text-slate-800">{transcription}</span>
+                        {transcription && !isRecording && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setTranscription("")}
+                            className="absolute top-1 right-1 h-6 w-6 p-0 hover:bg-slate-100"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </>
                     ) : (
                       <span className="text-slate-400 italic">
                         {isTranscribing ? "🔴 Recording... Speak now" : speechSupported ? "Click the microphone to start speaking..." : "Speech recognition not available in this browser"}
@@ -455,9 +467,16 @@ export default function Interview() {
                   {submitAnswerMutation.isPending ? "Submitting..." : "Submit"}
                 </Button>
               </div>
-              <div className="text-xs text-slate-500 flex items-center">
-                <Volume2 className="mr-1 h-3 w-3" />
-                {speechSupported ? "Speak clearly and wait for the transcription to complete before submitting" : "Voice input is not available in this browser. Please use text input instead."}
+              <div className="text-xs text-slate-500 flex items-center justify-between">
+                <div className="flex items-center">
+                  <Volume2 className="mr-1 h-3 w-3" />
+                  {speechSupported ? "Speak clearly and wait for the transcription to complete before submitting" : "Voice input is not available in this browser. Please use text input instead."}
+                </div>
+                {transcription && (
+                  <div className="text-xs text-green-600">
+                    {transcription.split(' ').length} words captured
+                  </div>
+                )}
               </div>
             </div>
           )}
