@@ -41,7 +41,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Backend Services
 - **Storage Layer**: Abstracted database operations with interface-based design for flexibility
-- **OpenAI Service**: Integration with OpenAI GPT-4o for question generation and feedback analysis
+- **Gemini Service**: Integration with Google Gemini 2.5 Flash for question generation and feedback analysis
 - **Route Handlers**: RESTful endpoints for session management and conversation turns
 
 ### Speech Integration
@@ -63,7 +63,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Required Services
 - **Neon Database**: PostgreSQL hosting (free tier available)
-- **OpenAI API**: GPT-4o for question generation and feedback (requires API key)
+- **Google Gemini API**: Gemini 2.5 Flash for question generation and feedback (free tier available)
 
 ### Key Libraries
 - **Frontend**: React, Wouter, TanStack Query, shadcn/ui, Tailwind CSS
@@ -84,7 +84,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Environment Configuration
 - **DATABASE_URL**: PostgreSQL connection string (required)
-- **OPENAI_API_KEY**: OpenAI API access token (required)
+- **GEMINI_API_KEY**: Google Gemini API access token (required)
 - **NODE_ENV**: Environment flag for development/production behavior
 
 ### Key Architectural Decisions
