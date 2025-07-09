@@ -3,8 +3,10 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Mic, MicOff, Send, X, User, Bot, Star } from "lucide-react";
+import { Mic, MicOff, Send, X, User, Bot, Star, Keyboard, Volume2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ConversationTurn {
@@ -36,59 +38,98 @@ export default function Interview() {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [recognition, setRecognition] = useState<any>(null);
+  const [inputMode, setInputMode] = useState<"speech" | "text">("speech");
+  const [manualText, setManualText] = useState("");
+  const [speechSupported, setSpeechSupported] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const { toast } = useToast();
 
   // Initialize speech recognition
   useEffect(() => {
-    if (typeof window !== "undefined" && "webkitSpeechRecognition" in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition;
-      const recognitionInstance = new SpeechRecognition();
+    if (typeof window !== "undefined") {
+      // Check for both webkit and standard Speech Recognition
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       
-      recognitionInstance.continuous = true;
-      recognitionInstance.interimResults = true;
-      recognitionInstance.lang = "en-US";
-      
-      recognitionInstance.onresult = (event: any) => {
-        let finalTranscript = "";
-        let interimTranscript = "";
+      if (SpeechRecognition) {
+        const recognitionInstance = new SpeechRecognition();
         
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript;
-          } else {
-            interimTranscript += transcript;
+        // Improved configuration for better recognition
+        recognitionInstance.continuous = false; // Changed to false for better reliability
+        recognitionInstance.interimResults = true;
+        recognitionInstance.lang = "en-US";
+        recognitionInstance.maxAlternatives = 1;
+        
+        recognitionInstance.onstart = () => {
+          console.log("Speech recognition started");
+          setIsTranscribing(true);
+        };
+        
+        recognitionInstance.onresult = (event: any) => {
+          let finalTranscript = "";
+          let interimTranscript = "";
+          
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript;
+            } else {
+              interimTranscript += transcript;
+            }
           }
-        }
+          
+          // Update transcription with both final and interim results
+          const fullTranscript = (transcription + finalTranscript + interimTranscript).trim();
+          setTranscription(fullTranscript);
+          
+          // If we have final results, add them to our permanent transcription
+          if (finalTranscript) {
+            setTranscription(prev => (prev + " " + finalTranscript).trim());
+          }
+        };
         
-        setTranscription(finalTranscript + interimTranscript);
-      };
-      
-      recognitionInstance.onerror = (event: any) => {
-        console.error("Speech recognition error:", event.error);
-        setIsRecording(false);
-        setIsTranscribing(false);
-        toast({
-          title: "Speech Recognition Error",
-          description: "Please try again or type your answer manually.",
-          variant: "destructive",
-        });
-      };
-      
-      recognitionInstance.onend = () => {
-        setIsRecording(false);
-        setIsTranscribing(false);
-      };
-      
-      setRecognition(recognitionInstance);
-    } else {
-      toast({
-        title: "Speech Recognition Not Available",
-        description: "Please use a supported browser or type your answers manually.",
-        variant: "destructive",
-      });
+        recognitionInstance.onerror = (event: any) => {
+          console.error("Speech recognition error:", event.error);
+          setIsRecording(false);
+          setIsTranscribing(false);
+          
+          let errorMessage = "Please try again or switch to text input.";
+          switch (event.error) {
+            case "not-allowed":
+              errorMessage = "Microphone access denied. Please allow microphone access and try again.";
+              break;
+            case "no-speech":
+              errorMessage = "No speech detected. Please speak clearly and try again.";
+              break;
+            case "audio-capture":
+              errorMessage = "No microphone found. Please check your microphone and try again.";
+              break;
+            case "network":
+              errorMessage = "Network error. Please check your connection and try again.";
+              break;
+          }
+          
+          toast({
+            title: "Speech Recognition Error",
+            description: errorMessage,
+            variant: "destructive",
+          });
+        };
+        
+        recognitionInstance.onend = () => {
+          console.log("Speech recognition ended");
+          setIsRecording(false);
+          setIsTranscribing(false);
+        };
+        
+        setRecognition(recognitionInstance);
+        setSpeechSupported(true);
+        console.log("Speech recognition initialized successfully");
+      } else {
+        setSpeechSupported(false);
+        setInputMode("text");
+        console.log("Speech recognition not supported in this browser");
+      }
     }
   }, [toast]);
 
@@ -143,6 +184,7 @@ export default function Interview() {
     onSuccess: () => {
       refetchHistory();
       setTranscription("");
+      setManualText("");
       // Generate next question
       generateQuestionMutation.mutate();
     },
@@ -179,10 +221,10 @@ export default function Interview() {
   }, [history, currentQuestion]);
 
   const toggleRecording = () => {
-    if (!recognition) {
+    if (!recognition || !speechSupported) {
       toast({
         title: "Speech Recognition Not Available",
-        description: "Please type your answer manually.",
+        description: "Please use text input instead.",
         variant: "destructive",
       });
       return;
@@ -193,15 +235,36 @@ export default function Interview() {
       setIsRecording(false);
       setIsTranscribing(false);
     } else {
+      // Clear previous transcription and start fresh
       setTranscription("");
-      recognition.start();
-      setIsRecording(true);
-      setIsTranscribing(true);
+      try {
+        recognition.start();
+        setIsRecording(true);
+        console.log("Starting speech recognition...");
+      } catch (error) {
+        console.error("Failed to start speech recognition:", error);
+        toast({
+          title: "Speech Recognition Error",
+          description: "Could not start microphone. Please try text input instead.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
+  const switchInputMode = (mode: "speech" | "text") => {
+    if (isRecording) {
+      recognition?.stop();
+    }
+    setInputMode(mode);
+    setTranscription("");
+    setManualText("");
+  };
+
   const handleSubmitAnswer = () => {
-    if (!transcription.trim()) {
+    const answer = inputMode === "speech" ? transcription.trim() : manualText.trim();
+    
+    if (!answer) {
       toast({
         title: "No Answer",
         description: "Please provide an answer before submitting.",
@@ -212,7 +275,7 @@ export default function Interview() {
 
     submitAnswerMutation.mutate({
       question: currentQuestion,
-      answer: transcription.trim(),
+      answer: answer,
     });
   };
 
@@ -331,42 +394,110 @@ export default function Interview() {
 
         {/* Input Area */}
         <div className="border-t border-slate-200 p-4 bg-slate-50">
-          <div className="flex items-center space-x-4">
-            <Button
-              onClick={toggleRecording}
-              className={`w-12 h-12 rounded-full ${
-                isRecording 
-                  ? "bg-red-600 hover:bg-red-700 animate-pulse" 
-                  : "bg-red-600 hover:bg-red-700"
-              }`}
-              disabled={!currentQuestion}
-            >
-              {isRecording ? <MicOff className="text-white" /> : <Mic className="text-white" />}
-            </Button>
-            <div className="flex-1">
-              <div className="min-h-12 bg-white border border-slate-300 rounded-lg p-3">
-                {transcription ? (
-                  <span className="text-slate-800">{transcription}</span>
-                ) : (
-                  <span className="text-slate-400 italic">
-                    {isTranscribing ? "🔴 Recording... Speak now" : "Click the microphone to start speaking..."}
-                  </span>
-                )}
+          {/* Input Mode Toggle */}
+          <div className="flex justify-center mb-4">
+            <div className="flex bg-slate-200 rounded-lg p-1">
+              <Button
+                variant={inputMode === "speech" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => switchInputMode("speech")}
+                disabled={!speechSupported}
+                className="flex items-center space-x-2"
+              >
+                <Mic className="h-4 w-4" />
+                <span>Voice</span>
+                {!speechSupported && <Badge variant="secondary" className="ml-1 text-xs">Not Available</Badge>}
+              </Button>
+              <Button
+                variant={inputMode === "text" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => switchInputMode("text")}
+                className="flex items-center space-x-2"
+              >
+                <Keyboard className="h-4 w-4" />
+                <span>Type</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Voice Input Mode */}
+          {inputMode === "speech" && (
+            <div className="space-y-3">
+              <div className="flex items-center space-x-4">
+                <Button
+                  onClick={toggleRecording}
+                  className={`w-12 h-12 rounded-full ${
+                    isRecording 
+                      ? "bg-red-600 hover:bg-red-700 animate-pulse" 
+                      : "bg-red-600 hover:bg-red-700"
+                  }`}
+                  disabled={!currentQuestion || !speechSupported}
+                >
+                  {isRecording ? <MicOff className="text-white" /> : <Mic className="text-white" />}
+                </Button>
+                <div className="flex-1">
+                  <div className="min-h-12 bg-white border border-slate-300 rounded-lg p-3">
+                    {transcription ? (
+                      <span className="text-slate-800">{transcription}</span>
+                    ) : (
+                      <span className="text-slate-400 italic">
+                        {isTranscribing ? "🔴 Recording... Speak now" : speechSupported ? "Click the microphone to start speaking..." : "Speech recognition not available in this browser"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  onClick={handleSubmitAnswer}
+                  disabled={!transcription.trim() || submitAnswerMutation.isPending}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  {submitAnswerMutation.isPending ? "Submitting..." : "Submit"}
+                </Button>
+              </div>
+              <div className="text-xs text-slate-500 flex items-center">
+                <Volume2 className="mr-1 h-3 w-3" />
+                {speechSupported ? "Speak clearly and wait for the transcription to complete before submitting" : "Voice input is not available in this browser. Please use text input instead."}
               </div>
             </div>
-            <Button
-              onClick={handleSubmitAnswer}
-              disabled={!transcription.trim() || submitAnswerMutation.isPending}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Send className="mr-2 h-4 w-4" />
-              {submitAnswerMutation.isPending ? "Submitting..." : "Submit"}
-            </Button>
-          </div>
-          <div className="mt-2 text-xs text-slate-500 flex items-center">
-            <span className="mr-1">💡</span>
-            Speak clearly and wait for the transcription to complete before submitting
-          </div>
+          )}
+
+          {/* Text Input Mode */}
+          {inputMode === "text" && (
+            <div className="space-y-3">
+              <div className="flex items-end space-x-4">
+                <div className="flex-1">
+                  <Textarea
+                    value={manualText}
+                    onChange={(e) => setManualText(e.target.value)}
+                    placeholder="Type your answer here..."
+                    className="min-h-[80px] resize-none"
+                    disabled={!currentQuestion}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && e.shiftKey === false) {
+                        e.preventDefault();
+                        if (manualText.trim() && !submitAnswerMutation.isPending) {
+                          handleSubmitAnswer();
+                        }
+                      }
+                    }}
+                  />
+                </div>
+                <Button
+                  onClick={handleSubmitAnswer}
+                  disabled={!manualText.trim() || submitAnswerMutation.isPending}
+                  className="bg-blue-600 hover:bg-blue-700 h-[80px]"
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  {submitAnswerMutation.isPending ? "Submitting..." : "Submit"}
+                </Button>
+              </div>
+              <div className="text-xs text-slate-500 flex items-center">
+                <Keyboard className="mr-1 h-3 w-3" />
+                Press Enter to submit your answer, or Shift+Enter for new line
+              </div>
+            </div>
+          )}
         </div>
       </Card>
     </div>
