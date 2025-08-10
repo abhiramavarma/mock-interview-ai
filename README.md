@@ -79,6 +79,21 @@ Follow these steps to get a local copy up and running.
     ```
     The application will be available at `http://localhost:5000`.
 
+## Deployment
+
+This project is configured for easy deployment on Vercel.
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyourusername%2Fmock-interview-ai&env=DATABASE_URL,GEMINI_API_KEY)
+
+### Vercel Deployment Steps
+
+1.  **Click the "Deploy with Vercel" button above.**
+2.  **Clone the repository** to your GitHub account.
+3.  **Set Environment Variables:** Vercel will prompt you to enter the `DATABASE_URL` and `GEMINI_API_KEY`. Make sure to set these up as secret environment variables.
+4.  **Deploy:** Vercel will automatically build and deploy the application. The `vercel.json` file in the repository contains the necessary configuration.
+
+Your application will be live in a few moments!
+
 ## Project Showcase
 
 ### Interview History
