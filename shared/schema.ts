@@ -14,6 +14,11 @@ export const interviewSessions = pgTable("interview_sessions", {
     difficulty?: string;
     questionCount?: number;
     duration?: number;
+  }>(),
+  performanceMetrics: jsonb("performance_metrics").$type<{
+    technicalScore?: number;
+    communicationScore?: number;
+    problemSolvingScore?: number;
   }>()
 });
 

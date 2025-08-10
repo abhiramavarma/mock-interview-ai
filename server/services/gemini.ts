@@ -49,7 +49,7 @@ Respond with only the question, no additional text.`;
     answer: string, 
     topic: string, 
     conversationHistory: ConversationTurn[]
-  ): Promise<{ feedback: string; score: number; followUpQuestion?: string }> {
+  ): Promise<{ feedback: string; score: number; strengths: string[]; improvements: string[]; followUpQuestion?: string }> {
     try {
       const prompt = `You are evaluating an interview answer for a ${topic} position.
 
@@ -93,13 +93,17 @@ Respond in JSON format:
       
       return {
         feedback: result.feedback || "Good answer! Keep practicing to improve further.",
-        score: Math.max(1, Math.min(10, result.score || 7))
+        score: Math.max(1, Math.min(10, result.score || 7)),
+        strengths: result.strengths || [],
+        improvements: result.improvements || []
       };
     } catch (error) {
       console.error("Error generating feedback:", error);
       return {
         feedback: "Thank you for your answer. Consider providing more specific examples and technical details.",
-        score: 7
+        score: 7,
+        strengths: [],
+        improvements: []
       };
     }
   }
@@ -107,7 +111,7 @@ Respond in JSON format:
   async generateSessionSummary(
     topic: string, 
     conversationHistory: ConversationTurn[]
-  ): Promise<{ summary: string; overallScore: number; recommendations: string[] }> {
+  ): Promise<{ summary: string; overallScore: number; recommendations: string[], technicalScore: number; communicationScore: number; problemSolvingScore: number; }> {
     try {
       const conversation = conversationHistory.map(turn => 
         `${turn.speaker}: ${turn.textContent}${turn.feedbackContent ? `\nFeedback: ${turn.feedbackContent}` : ''}`
@@ -156,14 +160,20 @@ Provide a comprehensive summary in JSON format:
       return {
         summary: result.summary || "Interview completed with good overall performance.",
         overallScore: Math.max(1, Math.min(10, result.overallScore || 7)),
-        recommendations: result.recommendations || ["Continue practicing", "Focus on specific examples"]
+        recommendations: result.recommendations || ["Continue practicing", "Focus on specific examples"],
+        technicalScore: result.technicalScore || 7,
+        communicationScore: result.communicationScore || 7,
+        problemSolvingScore: result.problemSolvingScore || 7,
       };
     } catch (error) {
       console.error("Error generating session summary:", error);
       return {
         summary: "Interview session completed. Review the conversation history for detailed feedback.",
         overallScore: 7,
-        recommendations: ["Practice more technical questions", "Prepare specific examples"]
+        recommendations: ["Practice more technical questions", "Prepare specific examples"],
+        technicalScore: 7,
+        communicationScore: 7,
+        problemSolvingScore: 7,
       };
     }
   }

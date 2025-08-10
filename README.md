@@ -1,201 +1,115 @@
-# Mock Interview AI Application
+# InterviewAI: Your Personal AI-Powered Mock Interview Coach
 
-A full-stack conversational AI mock interview platform that helps users practice interviews through AI-powered conversations. Built with React, Node.js, PostgreSQL, and Google Gemini AI.
+<p align="center">
+  <img src="docs/screenshots/dashboard.png" alt="InterviewAI Dashboard" width="80%">
+</p>
 
-## Features
+<p align="center">
+  <strong>Practice your interviewing skills with a conversational AI that provides real-time feedback and performance analysis.</strong>
+</p>
 
-- **AI-Powered Interviews**: Intelligent question generation and feedback using Google Gemini 2.5 Flash
-- **Dual Input Modes**: Voice recognition with text input fallback
-- **Real-time Transcription**: Browser-based speech-to-text with enhanced error handling
-- **Session Management**: Complete interview history and progress tracking
-- **Feedback System**: Detailed AI feedback with scoring for each response
-- **Responsive Design**: Clean, modern interface with Tailwind CSS and shadcn/ui components
+---
+
+## About The Project
+
+InterviewAI is a full-stack web application designed to help job seekers prepare for technical interviews. It simulates a real interview experience by having a conversation with an AI powered by Google's Gemini model. Users can choose an interview topic, answer questions using voice or text, and receive instant, detailed feedback on their responses. The platform tracks progress over time, providing a comprehensive history and performance analytics to help users identify their strengths and weaknesses.
+
+This project was built to showcase a modern, end-to-end application using a popular and powerful tech stack, and to demonstrate the capabilities of conversational AI in a practical, helpful tool.
+
+## Key Features
+
+- **🤖 Conversational AI Interviews:** Engage in natural, back-and-forth interviews with an AI powered by Google Gemini.
+- **🎙️ Dual Input Modes:** Choose between speaking your answers with real-time voice transcription or typing them out.
+- **📈 Detailed Feedback & Scoring:** Receive a score from 1-10 and constructive feedback on every answer, helping you improve on the spot.
+- **📊 Performance Analytics:** The dashboard and history pages provide an overview of your performance, including an overall score and a breakdown of communication, technical, and problem-solving skills.
+- **📚 Session History:** Review your past interviews, including the full conversation transcript and all feedback, to track your progress.
+- **✨ Modern & Responsive UI:** A clean and intuitive interface built with Tailwind CSS and shadcn/ui.
 
 ## Tech Stack
 
-### Frontend
-- **React** with TypeScript
-- **Tailwind CSS** for styling
-- **shadcn/ui** for UI components
-- **Wouter** for routing
-- **TanStack Query** for state management
-- **Vite** for build tooling
+| Category | Technology |
+|---|---|
+| **Frontend** | React, TypeScript, Vite, Tailwind CSS, shadcn/ui, TanStack Query |
+| **Backend** | Node.js, Express, TypeScript |
+| **Database** | PostgreSQL with Neon (Serverless) |
+| **AI** | Google Gemini 2.5 Flash |
+| **ORM** | Drizzle ORM |
 
-### Backend
-- **Node.js** with Express
-- **TypeScript** for type safety
-- **Drizzle ORM** for database operations
-- **PostgreSQL** with Neon serverless
-- **Google Gemini API** for AI functionality
+## Getting Started
 
-## Prerequisites
+Follow these steps to get a local copy up and running.
 
-- Node.js 18+ installed
-- PostgreSQL database (we recommend Neon for free hosting)
-- Google Gemini API key
+### Prerequisites
 
-## Installation
+- Node.js (v18 or newer)
+- A free PostgreSQL database from [Neon](https://neon.tech)
+- A free API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/mock-interview-ai.git
-cd mock-interview-ai
-```
+### Installation & Setup
 
-2. Install dependencies:
-```bash
-npm install
-```
+1.  **Clone the repository:**
+    ```sh
+    git clone https://github.com/yourusername/mock-interview-ai.git
+    cd mock-interview-ai
+    ```
 
-3. Set up environment variables:
-Create a `.env` file in the root directory:
-```env
-DATABASE_URL=your_postgresql_connection_string
-GEMINI_API_KEY=your_gemini_api_key
-NODE_ENV=development
-```
+2.  **Install dependencies:**
+    ```sh
+    npm install
+    ```
 
-4. Push database schema:
-```bash
-npm run db:push
-```
+3.  **Set up environment variables:**
+    Create a `.env` file in the root directory and add your database connection string and API key.
+    ```env
+    # .env
+    DATABASE_URL="your_postgresql_connection_string_from_neon"
+    GEMINI_API_KEY="your_gemini_api_key"
+    NODE_ENV=development
+    ```
 
-5. Start the development server:
-```bash
-npm run dev
-```
+4.  **Push the database schema:**
+    This command will set up the necessary tables in your database.
+    ```sh
+    npm run db:push
+    ```
 
-The application will be available at `http://localhost:5000`
+5.  **Run the development server:**
+    ```sh
+    npm run dev
+    ```
+    The application will be available at `http://localhost:5000`.
 
-## Environment Variables
+## Project Showcase
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `DATABASE_URL` | PostgreSQL connection string | Yes |
-| `GEMINI_API_KEY` | Google Gemini API key | Yes |
-| `NODE_ENV` | Environment (development/production) | No |
+### Interview History
+<img src="docs/screenshots/history.png" alt="Interview History Page" width="80%">
 
-## Getting API Keys
+### Detailed Session Review
+<img src="docs/screenshots/session_details.png" alt="Session Details Page" width="80%">
 
-### Google Gemini API
-1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Sign in with your Google account
-3. Create a new API key
-4. Copy the key to your `.env` file
+## Available Scripts
 
-### Neon Database
-1. Sign up at [Neon](https://neon.tech)
-2. Create a new project
-3. Copy the connection string to your `.env` file
-
-## Project Structure
-
-```
-├── client/                 # React frontend
-│   ├── src/
-│   │   ├── components/    # UI components
-│   │   ├── pages/         # Application pages
-│   │   ├── hooks/         # Custom React hooks
-│   │   └── lib/           # Utility functions
-├── server/                # Node.js backend
-│   ├── services/          # Business logic
-│   ├── db.ts             # Database connection
-│   ├── routes.ts         # API routes
-│   └── storage.ts        # Data access layer
-├── shared/               # Shared types and schemas
-└── components.json       # shadcn/ui configuration
-```
-
-## Usage
-
-1. **Start an Interview**: Choose your topic and difficulty level
-2. **Answer Questions**: Use voice input or type your responses
-3. **Get Feedback**: Receive AI-powered feedback and scoring
-4. **Review History**: Access complete interview transcripts and summaries
-
-## Features in Detail
-
-### Speech Recognition
-- Browser-native Web Speech API
-- Automatic fallback to text input
-- Real-time transcription with interim results
-- Enhanced error handling and user feedback
-
-### AI Integration
-- Google Gemini 2.5 Flash for question generation
-- Contextual follow-up questions based on conversation history
-- Detailed feedback with scoring (1-10 scale)
-- Session summaries with overall performance analysis
-
-### Database Schema
-- **Interview Sessions**: Store session metadata, timing, and scores
-- **Conversation Turns**: Track individual questions, responses, and feedback
-- **Relational Design**: Proper foreign key relationships for data integrity
-
-## Development
-
-### Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run db:push` - Push database schema changes
-
-### Database Migrations
-
-This project uses Drizzle ORM with push-based migrations:
-
-```bash
-# Apply schema changes to database
-npm run db:push
-
-# Generate migration files (optional)
-npm run db:generate
-```
-
-## Deployment
-
-### Replit Deployment
-1. Import the project to Replit
-2. Set environment variables in Replit Secrets
-3. Click "Deploy" to create a public deployment
-
-### Manual Deployment
-1. Build the project: `npm run build`
-2. Set production environment variables
-3. Deploy to your preferred platform (Vercel, Netlify, Railway, etc.)
+- `npm run dev`: Starts the development server with hot-reloading.
+- `npm run build`: Builds the application for production.
+- `npm run start`: Starts the production server.
+- `npm run db:push`: Pushes schema changes to the database.
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m 'Add amazing feature'`
-4. Push to the branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+Contributions are welcome! Please feel free to fork the repository, create a feature branch, and open a pull request.
+
+1.  Fork the Project
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the Branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-If you encounter any issues or have questions:
-1. Check the [Issues](https://github.com/yourusername/mock-interview-ai/issues) page
-2. Create a new issue if your problem isn't already reported
-3. Provide detailed information about your environment and the issue
+Distributed under the MIT License. See `LICENSE` for more information.
 
 ## Acknowledgments
-
-- [Google Gemini AI](https://ai.google.dev/) for AI capabilities
-- [Neon](https://neon.tech/) for PostgreSQL hosting
-- [shadcn/ui](https://ui.shadcn.com/) for beautiful UI components
-- [Drizzle ORM](https://orm.drizzle.team/) for type-safe database operations
-
-## Roadmap
-
-- [ ] User authentication system
-- [ ] Custom interview templates
-- [ ] Analytics dashboard
-- [ ] Mobile app version
-- [ ] Integration with more AI providers
-- [ ] Advanced scoring algorithms
+- [Google Gemini AI](https://ai.google.dev/)
+- [Neon](https://neon.tech/)
+- [shadcn/ui](https://ui.shadcn.com/)
+- [Drizzle ORM](https://orm.drizzle.team/)

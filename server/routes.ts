@@ -75,7 +75,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET /api/sessions - Retrieve all past interview sessions
   app.get("/api/sessions", async (req, res) => {
     try {
-      const sessions = await storage.getAllSessions();
+      const querySchema = z.object({
+        topic: z.string().optional(),
+        time: z.string().optional(),
+      });
+      const { topic, time } = querySchema.parse(req.query);
+
+      const sessions = await storage.getAllSessions({ topic, time });
       
       const sessionSummaries = sessions.map(session => ({
         id: session.id,
@@ -84,13 +90,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endTime: session.endTime,
         summary: session.summary,
         overallScore: session.overallScore,
-        metadata: session.metadata
+        metadata: session.metadata,
+        performanceMetrics: session.performanceMetrics
       }));
       
       res.json(sessionSummaries);
     } catch (error) {
       console.error("Error fetching sessions:", error);
-      res.status(500).json({ message: "Failed to fetch sessions" });
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          message: "Invalid query parameters",
+          errors: error.errors
+        });
+      } else {
+        res.status(500).json({ message: "Failed to fetch sessions" });
+      }
+    }
+  });
+
+  // GET /api/topics - Retrieve all unique interview topics
+  app.get("/api/topics", async (_req, res) => {
+    try {
+      const topics = await storage.getAllTopics();
+      res.json(topics);
+    } catch (error) {
+      console.error("Error fetching topics:", error);
+      res.status(500).json({ message: "Failed to fetch topics" });
+    }
+  });
+
+  // GET /api/sessions/:sessionId - Retrieve a single interview session
+  app.get("/api/sessions/:sessionId", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const session = await storage.getSession(sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      res.json(session);
+    } catch (error) {
+      console.error("Error fetching session:", error);
+      res.status(500).json({ message: "Failed to fetch session" });
     }
   });
 
@@ -171,12 +211,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const history = await storage.getSessionHistory(sessionId);
       const summary = await geminiService.generateSessionSummary(session.topic, history);
+      console.log("Generated summary from Gemini:", JSON.stringify(summary, null, 2));
       
       const updatedSession = await storage.updateSession(sessionId, {
         endTime: new Date(),
         summary: summary.summary,
-        overallScore: summary.overallScore.toString()
+        overallScore: summary.overallScore.toString(),
+        performanceMetrics: {
+          technicalScore: summary.technicalScore,
+          communicationScore: summary.communicationScore,
+          problemSolvingScore: summary.problemSolvingScore,
+        }
       });
+      console.log("Updated session from DB:", JSON.stringify(updatedSession, null, 2));
       
       res.json({ success: true, session: updatedSession });
     } catch (error) {
@@ -186,5 +233,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+
+  if (app.get("env") === "development") {
+    app.post("/api/testing/clear-database", async (_req, res) => {
+      try {
+        await storage.clearDatabase();
+        res.json({ success: true, message: "Database cleared successfully" });
+      } catch (error) {
+        console.error("Error clearing database:", error);
+        res.status(500).json({ message: "Failed to clear database" });
+      }
+    });
+  }
+
   return httpServer;
 }

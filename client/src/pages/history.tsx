@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,39 +19,36 @@ interface Session {
     questionCount?: number;
     duration?: number;
   };
+  performanceMetrics?: {
+    technicalScore?: number;
+    communicationScore?: number;
+    problemSolvingScore?: number;
+  };
 }
 
 export default function History() {
   const [topicFilter, setTopicFilter] = useState("All Topics");
   const [timeFilter, setTimeFilter] = useState("Last 30 days");
 
-  const { data: sessions = [], isLoading } = useQuery<Session[]>({
-    queryKey: ["/api/sessions"],
+  const { data: sessions = [], isLoading: isLoadingSessions } = useQuery<Session[]>({
+    queryKey: ["/api/sessions", { topic: topicFilter, time: timeFilter }],
+    queryFn: async ({ queryKey }) => {
+      const [, params] = queryKey;
+      const searchParams = new URLSearchParams(params as Record<string, string>);
+      const response = await apiRequest("GET", `/api/sessions?${searchParams}`);
+      return response.json();
+    },
   });
 
-  const filteredSessions = sessions.filter(session => {
-    const topicMatch = topicFilter === "All Topics" || session.topic === topicFilter;
-    
-    let timeMatch = true;
-    if (timeFilter !== "All time") {
-      const sessionDate = new Date(session.startTime);
-      const now = new Date();
-      
-      switch (timeFilter) {
-        case "Last 7 days":
-          timeMatch = (now.getTime() - sessionDate.getTime()) <= 7 * 24 * 60 * 60 * 1000;
-          break;
-        case "Last 30 days":
-          timeMatch = (now.getTime() - sessionDate.getTime()) <= 30 * 24 * 60 * 60 * 1000;
-          break;
-        case "Last 3 months":
-          timeMatch = (now.getTime() - sessionDate.getTime()) <= 90 * 24 * 60 * 60 * 1000;
-          break;
-      }
-    }
-    
-    return topicMatch && timeMatch;
+  const { data: topics = [], isLoading: isLoadingTopics } = useQuery<string[]>({
+    queryKey: ["/api/topics"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/topics");
+      return response.json();
+    },
   });
+
+  const isLoading = isLoadingSessions || isLoadingTopics;
 
   const getTopicIcon = (topic: string) => {
     if (topic.toLowerCase().includes("backend") || topic.toLowerCase().includes("database")) {
@@ -72,8 +70,6 @@ export default function History() {
     const remainingMinutes = minutes % 60;
     return `${hours}h ${remainingMinutes}m`;
   };
-
-  const uniqueTopics = Array.from(new Set(sessions.map(s => s.topic)));
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -114,7 +110,7 @@ export default function History() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All Topics">All Topics</SelectItem>
-                  {uniqueTopics.map(topic => (
+                  {topics.map(topic => (
                     <SelectItem key={topic} value={topic}>{topic}</SelectItem>
                   ))}
                 </SelectContent>
@@ -152,7 +148,7 @@ export default function History() {
                 </Card>
               ))}
             </div>
-          ) : filteredSessions.length === 0 ? (
+          ) : sessions.length === 0 ? (
             <Card>
               <CardContent className="p-12 text-center">
                 <Award className="mx-auto h-16 w-16 text-slate-300 mb-4" />
@@ -171,7 +167,7 @@ export default function History() {
             </Card>
           ) : (
             <div className="grid gap-6">
-              {filteredSessions.map((session) => (
+              {sessions.map((session) => (
                 <Card key={session.id}>
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-4">
@@ -201,33 +197,37 @@ export default function History() {
                           </div>
                           <div className="text-xs text-slate-500">Overall Score</div>
                         </div>
-                        <Button variant="outline">
-                          View Details
-                        </Button>
+                        <Link href={`/history/${session.id}`}>
+                          <Button variant="outline">
+                            View Details
+                          </Button>
+                        </Link>
                       </div>
                     </div>
 
-                    {/* Performance Metrics Placeholder */}
-                    <div className="grid grid-cols-3 gap-4 mb-4">
-                      <div className="bg-slate-50 rounded-lg p-3">
-                        <div className="text-sm text-slate-600">Communication</div>
-                        <div className="text-lg font-bold text-green-600">
-                          {session.overallScore ? (parseFloat(session.overallScore) + 0.5).toFixed(1) : "N/A"}
+                    {/* Performance Metrics */}
+                    {session.performanceMetrics && (
+                      <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div className="bg-slate-50 rounded-lg p-3">
+                          <div className="text-sm text-slate-600">Communication</div>
+                          <div className="text-lg font-bold text-green-600">
+                            {session.performanceMetrics.communicationScore?.toFixed(1) || "N/A"}
+                          </div>
+                        </div>
+                        <div className="bg-slate-50 rounded-lg p-3">
+                          <div className="text-sm text-slate-600">Technical Skills</div>
+                          <div className="text-lg font-bold text-blue-600">
+                            {session.performanceMetrics.technicalScore?.toFixed(1) || "N/A"}
+                          </div>
+                        </div>
+                        <div className="bg-slate-50 rounded-lg p-3">
+                          <div className="text-sm text-slate-600">Problem Solving</div>
+                          <div className="text-lg font-bold text-yellow-600">
+                            {session.performanceMetrics.problemSolvingScore?.toFixed(1) || "N/A"}
+                          </div>
                         </div>
                       </div>
-                      <div className="bg-slate-50 rounded-lg p-3">
-                        <div className="text-sm text-slate-600">Technical Skills</div>
-                        <div className="text-lg font-bold text-blue-600">
-                          {session.overallScore || "N/A"}
-                        </div>
-                      </div>
-                      <div className="bg-slate-50 rounded-lg p-3">
-                        <div className="text-sm text-slate-600">Problem Solving</div>
-                        <div className="text-lg font-bold text-yellow-600">
-                          {session.overallScore ? (parseFloat(session.overallScore) - 0.3).toFixed(1) : "N/A"}
-                        </div>
-                      </div>
-                    </div>
+                    )}
 
                     {/* Summary */}
                     {session.summary && (

@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
 import Interview from "@/pages/interview";
 import History from "@/pages/history";
+import SessionDetails from "@/pages/session-details";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -15,6 +16,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/interview/:sessionId?" component={Interview} />
       <Route path="/history" component={History} />
+      <Route path="/history/:sessionId" component={SessionDetails} />
       <Route component={NotFound} />
     </Switch>
   );
