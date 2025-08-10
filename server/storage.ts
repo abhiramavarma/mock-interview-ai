@@ -10,7 +10,7 @@ import {
   type InsertUser 
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, gte, asc } from "drizzle-orm";
 
 export interface IStorage {
   // User methods (legacy)
@@ -21,13 +21,17 @@ export interface IStorage {
   // Interview session methods
   createSession(session: InsertInterviewSession): Promise<InterviewSession>;
   getSession(sessionId: string): Promise<InterviewSession | undefined>;
-  getAllSessions(): Promise<InterviewSession[]>;
+  getAllSessions(filters?: { topic?: string; time?: string }): Promise<InterviewSession[]>;
   updateSession(sessionId: string, updates: Partial<InsertInterviewSession>): Promise<InterviewSession | undefined>;
-  
+  getAllTopics(): Promise<string[]>;
+
   // Conversation turn methods
   createTurn(turn: InsertConversationTurn): Promise<ConversationTurn>;
   getSessionHistory(sessionId: string): Promise<ConversationTurn[]>;
   getTurn(turnId: string): Promise<ConversationTurn | undefined>;
+
+  // Testing methods
+  clearDatabase(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -67,10 +71,42 @@ export class DatabaseStorage implements IStorage {
     return session || undefined;
   }
 
-  async getAllSessions(): Promise<InterviewSession[]> {
+  async getAllSessions(filters: { topic?: string; time?: string } = {}): Promise<InterviewSession[]> {
+    const { topic, time } = filters;
+    const conditions = [];
+
+    if (topic && topic !== "All Topics") {
+      conditions.push(eq(interviewSessions.topic, topic));
+    }
+
+    if (time && time !== "All time") {
+      const now = new Date();
+      let dateFrom: Date;
+      switch (time) {
+        case "Last 7 days":
+          dateFrom = new Date(new Date().setDate(now.getDate() - 7));
+          break;
+        case "Last 30 days":
+          dateFrom = new Date(new Date().setDate(now.getDate() - 30));
+          break;
+        case "Last 3 months":
+          dateFrom = new Date(new Date().setMonth(now.getMonth() - 3));
+          break;
+        default:
+          // This case should ideally not be hit if frontend sends valid filters
+          dateFrom = new Date(0);
+      }
+      if (dateFrom) {
+        conditions.push(gte(interviewSessions.startTime, dateFrom));
+      }
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
     return await db
       .select()
       .from(interviewSessions)
+      .where(whereClause)
       .orderBy(desc(interviewSessions.startTime));
   }
 
@@ -81,6 +117,14 @@ export class DatabaseStorage implements IStorage {
       .where(eq(interviewSessions.id, sessionId))
       .returning();
     return updatedSession || undefined;
+  }
+
+  async getAllTopics(): Promise<string[]> {
+    const topics = await db
+      .selectDistinct({ topic: interviewSessions.topic })
+      .from(interviewSessions)
+      .orderBy(asc(interviewSessions.topic));
+    return topics.map(t => t.topic);
   }
 
   // Conversation turn methods
@@ -106,6 +150,11 @@ export class DatabaseStorage implements IStorage {
       .from(conversationTurns)
       .where(eq(conversationTurns.id, turnId));
     return turn || undefined;
+  }
+
+  // Testing methods
+  async clearDatabase(): Promise<void> {
+    await db.delete(interviewSessions);
   }
 }
 
