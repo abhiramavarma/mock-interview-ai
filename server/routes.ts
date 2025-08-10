@@ -170,13 +170,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const history = await storage.getSessionHistory(sessionId);
-      const summary = await geminiService.generateSessionSummary(session.topic, history);
-      
-      const updatedSession = await storage.updateSession(sessionId, {
+      const userAnswerCount = history.filter(turn => turn.speaker === "User").length;
+
+      let sessionUpdateData: {
+        endTime: Date;
+        summary?: string | null;
+        overallScore?: string | null;
+        metadata?: {
+          difficulty?: string;
+          questionCount?: number;
+          duration?: number;
+        };
+      } = {
         endTime: new Date(),
-        summary: summary.summary,
-        overallScore: summary.overallScore.toString()
-      });
+        metadata: {
+          ...session.metadata,
+          questionCount: userAnswerCount,
+        },
+      };
+
+      if (userAnswerCount > 0) {
+        const summary = await geminiService.generateSessionSummary(session.topic, history);
+        sessionUpdateData.summary = summary.summary;
+        sessionUpdateData.overallScore = summary.overallScore.toString();
+      } else {
+        sessionUpdateData.summary = null;
+        sessionUpdateData.overallScore = null;
+      }
+      
+      const updatedSession = await storage.updateSession(sessionId, sessionUpdateData);
       
       res.json({ success: true, session: updatedSession });
     } catch (error) {
